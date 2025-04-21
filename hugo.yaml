@@ -1,0 +1,39 @@
+baseurl: https://example.com/
+languageCode: zh-tw
+theme: hugo-profile
+title: Jack's Note
+
+DefaultContentLanguage: zh-tw
+
+languages:
+  # en:
+  #   languageName: English
+  #   title: Jack's Note
+  #   weight: 1
+  #   params:
+  #       sidebar:
+  #           subtitle: Learning note
+  zh-tw:
+        languageName: 繁體中文
+        title: Jack's Note
+        weight: 2
+        params:
+            sidebar:
+                subtitle: Learning note
+menu:
+  social:
+        - identifier: github
+          name: GitHub
+          url: https://github.com/jacketex894
+          params:
+              icon: brand-github
+related:
+    includeNewer: true
+    threshold: 60
+    toLower: false
+    indices:
+        - name: tags
+          weight: 100
+
+        - name: categories
+          weight: 200
