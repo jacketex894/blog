@@ -19,7 +19,7 @@ languages:
         weight: 2
         params:
             sidebar:
-                subtitle: Learning note
+                subtitle: Trying to do better
 menu:
   social:
         - identifier: github
