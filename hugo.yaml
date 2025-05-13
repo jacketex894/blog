@@ -17,9 +17,6 @@ languages:
         languageName: 繁體中文
         title: Jack's Note
         weight: 2
-        params:
-            sidebar:
-                subtitle: Trying to do better
 menu:
   social:
         - identifier: github
@@ -37,3 +34,10 @@ related:
 
         - name: categories
           weight: 200
+params:
+  sidebar:
+    subtitle: Trying to do better
+    avatar:
+      enabled: true
+      local: true
+      src: avaster.jpg
