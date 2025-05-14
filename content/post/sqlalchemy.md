@@ -188,6 +188,8 @@ sqlalchemy 是一個 ORM (Object Relational Mapper) library，讓使用者透過
 
 ORM 可以防止 SQL 注入攻擊，但由於轉譯的關係，使用 ORM 也會比原生的 SQL 速度要更慢。
 
+sqlalchemy default 就有 connection pool。
+
 以下是一個簡單的 sqlalchemy 範例
 ```
 from sqlalchemy import Column, Integer, String,create_engine
@@ -225,6 +227,8 @@ sqlalchemy 在使用 pool 的方式比較不同，並非是預先建立好連線
 而是首次使用的時候才建立連線，而 session.close 則是將資源歸還給 pool，並非關閉連線。
 
 可以發現使用 sqlalchemy 的時間與 mysql.connector 使用 pool 的時間接近，但稍慢一點，這部分的差異可能就是在於轉譯 SQL 指令所花費的時間。
+
+可以發現 63.3% 的時間都在 query_uesr 設定 fliter 條件去搜尋這段。
 ```
 Wrote profile results to query.py.lprof
 Timer unit: 1e-06 s
@@ -253,6 +257,17 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
     86       101         29.0      0.3      0.0      for i in range(0,100):
     87       100     231308.2   2313.1    100.0          query_with_pool_sqlalchemy()
 ```
+sqlalchemy 雖然在預設就有使用 pool，但也有提供使用者自行設定 pool 的參數。
+    * pool_size    : pool 內有多少連線需要保持
+    * max_overflow : 設定 pool 中最多可以有多少連線
+    * pool_recycle : 設定多少秒後回收連線
+    * pool_timeout : 設定多少秒後放棄從 pool 中取得連線
+max_overflow 的用意是當連線都在被使用的時候，最多可以多開到多少連線。
+以下是使用例子，作為 `create_engine` 的參數傳入即可。 
+```
+engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{3306}/{DB_NAME},pool_size=5, max_overflow=10")
+```
+更詳細的使用設定可以參考[官方文件](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine)
 ## Reference  
 https://en.wikipedia.org/wiki/Connection_pool
 https://vocus.cc/article/5f800406fd89780001365d17
@@ -263,3 +278,4 @@ https://github.com/pyutils/line_profiler
 https://reginapanpan.medium.com/sqlalchemy-%E6%98%AF%E4%BB%80%E9%BA%BC-%E8%88%87-orm-%E7%9A%84%E9%97%9C%E4%BF%82-a57b16053aec
 https://www.explainthis.io/zh-hant/swe/orm-intro
 https://docs.sqlalchemy.org/en/20/core/pooling.html
+https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine
