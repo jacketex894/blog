@@ -2,6 +2,9 @@
 date = '2025-05-06T21:07:33+08:00'
 draft = false
 title = 'Leetcode 347'
+categories = [
+  "Coding"
+]
 +++
 ## 題目
 [347. Top K Frequent Elements](https://leetcode.com/problems/top-k-frequent-elements)

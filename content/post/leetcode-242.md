@@ -2,6 +2,9 @@
 date = '2025-04-29T18:35:49+08:00'
 draft = false
 title = 'Leetcode 242'
+categories = [
+  "Coding"
+]
 +++
 ## 題目
 [242. Valid Anagram](https://leetcode.com/problems/valid-anagram)

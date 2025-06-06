@@ -2,6 +2,9 @@
 date = '2025-06-03T17:05:01+08:00'
 draft = false
 title = 'Database Replication'
+categories = [
+  "System Design"
+]
 +++
 ## 資料庫複寫(Database Replication)
 指的是將資料庫內的資料，複製到不同的資料庫實體上。 

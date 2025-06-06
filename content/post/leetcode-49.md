@@ -2,6 +2,9 @@
 date = '2025-05-02T14:37:32+08:00'
 draft = false
 title = 'Leetcode 49'
+categories = [
+  "Coding"
+]
 +++
 [49. Group anagram](https://leetcode.com/problems/group-anagrams)
 

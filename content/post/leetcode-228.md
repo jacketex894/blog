@@ -2,6 +2,9 @@
 date = '2025-04-21T16:52:48+08:00'
 draft = false
 title = 'Leetcode 228'
+categories = [
+  "Coding"
+]
 +++
 
 ## 題目

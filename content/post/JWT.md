@@ -2,6 +2,9 @@
 date = '2025-04-15T15:34:43+08:00'
 draft = false
 title = 'JWT Note'
+categories = [
+  "System Design"
+]
 +++
 
 ## JWT 是什麼

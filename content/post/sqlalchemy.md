@@ -2,6 +2,9 @@
 date = '2025-05-13T00:23:14+08:00'
 draft = false
 title = 'Sqlalchemy'
+categories = [
+  "System Design"
+]
 +++
 ## 前言
 學到了 connection pool，想說要來 optimize 自己的 side project。

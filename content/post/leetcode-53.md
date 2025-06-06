@@ -2,6 +2,9 @@
 date = '2025-05-07T16:46:07+08:00'
 draft = false
 title = 'Leetcode 53'
+categories = [
+  "Coding"
+]
 +++
 ## 題目
 [53. Maximum Subarray](https://leetcode.com/problems/maximum-subarray/)

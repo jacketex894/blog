@@ -2,6 +2,9 @@
 date = '2025-04-27T11:44:03+08:00'
 draft = false
 title = 'Leetcode 217'
+categories = [
+  "Coding"
+]
 +++
 ## 題目
 [217. Contains Duplicate](https://leetcode.com/problems/contains-duplicate/description/)

@@ -2,6 +2,9 @@
 date = '2025-05-09T11:28:40+08:00'
 draft = false
 title = 'Design Pattern Strategy'
+categories = [
+  "Design Pattern"
+]
 +++
 ## 策略模式
 將可互換的演算法封裝為獨立的類別，透過統一介面使用類別，使得變更行為時，不必因行為變化而重新修改類別本身。

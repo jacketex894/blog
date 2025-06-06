@@ -2,6 +2,9 @@
 date = '2025-05-22T11:17:31+08:00'
 draft = false
 title = 'SQL vs NoSQL'
+categories = [
+  "System Design"
+]
 +++
 ## SQL (Structured Query Language)
 

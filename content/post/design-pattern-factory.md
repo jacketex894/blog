@@ -2,6 +2,9 @@
 date = '2025-05-09T17:11:07+08:00'
 draft = false
 title = 'Design Pattern Factory'
+categories = [
+  "Design Pattern"
+]
 +++
 ## 工廠模式
 封裝建立物件的邏輯，讓使用者無須在意物件創建的相關邏輯(e.g. 讀取設定檔...)。

@@ -2,6 +2,9 @@
 date = '2025-04-29T14:37:14+08:00'
 draft = false
 title = 'Go Map'
+categories = [
+  "Coding"
+]
 +++
 ## map
 map 是 Go 中的哈希表（hash table），與 Python 中的 dict 類似。不過，Go 的 map 需要事先定義 key 和 value 的資料型別，並且 key 和 value 必須是相同資料型別的集合。
