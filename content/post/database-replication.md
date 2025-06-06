@@ -33,6 +33,10 @@ title = 'Database Replication'
    * 從資料庫出現問題，當只有一台時，可以先將讀取操作導向主資料庫。
    * 若有多台從資料庫，則先導向其他正常資料庫。
 
+### 缺點:
+1. 根據使用的機制不同，如有多個資料庫寫入，需考慮資料同步的問題。
+2. 主資料庫錯誤的話，需要手動將從資料庫轉為主資料庫。
+
 ## 使用 mysql 建立主從式架構
 
 可以參考我自己建立的[例子](https://github.com/jacketex894/System-design/tree/main/database_replication)
@@ -151,223 +155,228 @@ ENV MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
 COPY my.cnf /etc/mysql/my.cnf
 ```
 
-1. 設定主資料庫
+## Set up
+### 1. 設定主資料庫
 
-    首先需要設定 my.cnf，新增以下內容，或著也可以直接使用範例中的 my.cnf 移除掉註解。
-    ```
-    # 設定 server 唯一id
-    server-id=1
-    # 設定 binlog 檔案最大容量
-    max_binlog_size=100M
-    # 設定記錄檔案名稱
-    log_bin = mysql-bin
-    ```
+  首先需要設定 my.cnf，新增以下內容，或著也可以直接使用範例中的 my.cnf 移除掉註解。
+  ```
+  # 設定 server 唯一id
+  server-id=1
+  # 設定 binlog 檔案最大容量
+  max_binlog_size=100M
+  # 設定記錄檔案名稱
+  log_bin = mysql-bin
+  ```
 
-    將修改後的內容新增到容器內，因為範例建立的容器沒有 vi 或是 nano。
-    ```
-    docker cp ./my.cnf mysql-master:/etc/mysql/my.cnf
-    ```
+  將修改後的內容新增到容器內，因為範例建立的容器沒有 vi 或是 nano。
+  ```
+  docker cp ./my.cnf mysql-master:/etc/mysql/my.cnf
+  ```
 
-    重啟容器套用設定。
-    ```
-    docker restart mysql-master
-    ```
+  重啟容器套用設定。
+  ```
+  docker restart mysql-master
+  ```
 
-    為了繼續設定，要進入到容器內。
-    ```
-    docker exec -it mysql-master /bin/bash
-    ```
+  為了繼續設定，要進入到容器內。
+  ```
+  docker exec -it mysql-master /bin/bash
+  ```
 
-    進入到 mysql 內。
-    ```
-    mysql -u root -p
-    ```
-    然後輸入密碼，如果是使用範例的話，密碼是 test。
+  進入到 mysql 內。
+  ```
+  mysql -u root -p
+  ```
+  然後輸入密碼，如果是使用範例的話，密碼是 test。
 
-    以下指令 mysql> 表示進入 mysql 內下達的指令，實際輸入時請忽略。
+  以下指令 mysql> 表示進入 mysql 內下達的指令，實際輸入時請忽略。
 
-    此時執行 
-    ```
-    mysql> SHOW DATABASES;
-    ```
-    應該會看到，事先建立好的user_db。
-    ```
-    +--------------------+
-    | Database           |
-    +--------------------+
-    | information_schema |
-    | mysql              |
-    | performance_schema |
-    | sys                |
-    | user_db            |
-    +--------------------+
-    ```
+  此時執行 
+  ```
+  mysql> SHOW DATABASES;
+  ```
+  應該會看到，事先建立好的user_db。
+  ```
+  +--------------------+
+  | Database           |
+  +--------------------+
+  | information_schema |
+  | mysql              |
+  | performance_schema |
+  | sys                |
+  | user_db            |
+  +--------------------+
+  ```
 
-    建立給從資料庫使用的使用者，並指定使用 SHA-256 來加密及驗證密碼
-    ```
-    mysql> CREATE USER 'second'@'%' IDENTIFIED WITH caching_sha2_password BY 'test';
-    ```
+  建立給從資料庫使用的使用者，並指定使用 SHA-256 來加密及驗證密碼
+  ```
+  mysql> CREATE USER 'second'@'%' IDENTIFIED WITH caching_sha2_password BY 'test';
+  ```
 
-    設定使用者的權限。
-    ```
-    mysql> GRANT REPLICATION SLAVE ON *.* TO 'second'@'%';
-    ```
+  設定使用者的權限。
+  ```
+  mysql> GRANT REPLICATION SLAVE ON *.* TO 'second'@'%';
+  ```
 
-    重新載入權限，mysql 才能套用上面所設定的使用者權限。
-    ```
-    mysql> FLUSH PRIVILEGES;
-    ```
+  重新載入權限，mysql 才能套用上面所設定的使用者權限。
+  ```
+  mysql> FLUSH PRIVILEGES;
+  ```
 
-    確認設定是否生效。
-    ```
-    mysql> SHOW MASTER STATUS;
-    ```
-    應該會看到類似以下的輸出結果。
-    ```
-    +------------------+----------+--------------+------------------+-------------------+
-    | File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
-    +------------------+----------+--------------+------------------+-------------------+
-    | mysql-bin.000001 |      860 |              |                  |                   |
-    +------------------+----------+--------------+------------------+-------------------+
-    ```
-    請記下 File 跟 position 的內容，會在從資料庫的設定使用到。
+  確認設定是否生效。
+  ```
+  mysql> SHOW MASTER STATUS;
+  ```
+  應該會看到類似以下的輸出結果。
+  ```
+  +------------------+----------+--------------+------------------+-------------------+
+  | File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
+  +------------------+----------+--------------+------------------+-------------------+
+  | mysql-bin.000001 |      860 |              |                  |                   |
+  +------------------+----------+--------------+------------------+-------------------+
+  ```
+  請記下 File 跟 position 的內容，會在從資料庫的設定使用到。
 
-2. 備份主資料庫資料到從資料庫
-    先將 DB 設定為 read only，如果是正在線上的系統，此舉會影響到所有寫入功能，務必小心。 
-    ```
-    mysql> FLUSH TABLES WITH READ LOCK;
-    ```
+### 2. 備份主資料庫資料到從資料庫
+  先將 DB 設定為 read only，如果是正在線上的系統，此舉會影響到所有寫入功能，務必小心。 
+  ```
+  mysql> FLUSH TABLES WITH READ LOCK;
+  ```
 
-    退出 mysql 到 master-sql 的容器下達指令，備份資料。
-    ```
-    mysqldump -uroot -p  --all-databases > replication/master.sql
-    ```
-    會要求輸入密碼，密碼是 test。
+  退出 mysql 到 master-sql 的容器下達指令，備份資料。
+  ```
+  mysqldump -uroot -p  --all-databases > replication/master.sql
+  ```
+  會要求輸入密碼，密碼是 test。
 
-    在容器外，將 master-database 內的 replication 的備份資料複製到 slave-database 底下。
+  在容器外，將 master-database 內的 replication 的備份資料複製到 slave-database 底下。
 
-    ```
-    sudo cp master-database/replication/master.sql slave-database/replication/
-    ```
+  ```
+  sudo cp master-database/replication/master.sql slave-database/replication/
+  ```
 
-    Q: 為什麼要額外掛載 replication?
+  Q: 為什麼要額外掛載 replication?
 
-    A: 額外掛載 replication 是為了備份資料的移轉，也可以透過其他的方式將檔案移道從資料庫底下，並不限制一定只能照此方法執行。
+  A: 額外掛載 replication 是為了備份資料的移轉，也可以透過其他的方式將檔案移道從資料庫底下，並不限制一定只能照此方法執行。
 
-    進入到從資料庫的容器內。
-    ```
-    docker exec -it mysql-slave /bin/bash
-    ```
-    
-    將備份的資料匯入到從資料庫內，也可以看一下 master.sql 的內容，會發現裡面其實是 SQL 指令的腳本，所以這個動作其實是在從資料庫上 replay 主資料庫的操作。 
-    ```
-    mysql -u root -p --default-character-set=utf8 < replication/master.sql
-    ```
-    會要求輸入密碼，密碼是 test。
-
-    進入到 mysql 內。
-    ```
-    mysql -u root -p
-    ```
-    然後輸入密碼，如果是使用範例的話，密碼是 test。
-
-    此時執行 
-    ```
-    mysql> SHOW DATABASES;
-    ```
-    會看到，成功備份了主資料庫的 user_db。
-    ```
-    +--------------------+
-    | Database           |
-    +--------------------+
-    | information_schema |
-    | mysql              |
-    | performance_schema |
-    | sys                |
-    | user_db            |
-    +--------------------+
-    ```
-
-3. 設定從資料庫
-   
-    首先需要設定 my.cnf，新增以下內容，或著也可以直接使用範例中的 my.cnf 移除掉註解。
-    ```
-    # 設定 server 唯一id
-    server-id=2
-    # 設定只能讀取
-    read_only=ON
-    # 設定連 root 也只能讀取
-    super_read_only=ON
-    ```
-    `super_read_only` 這項設定端看使用者需求，如果只設定 `read_only` 只會阻擋普通使用者的寫入，並不會阻擋 root 的寫入。
-
-    將修改後的內容新增到容器內，因為範例建立的容器沒有 vi 或是 nano。
-    ```
-    docker cp ./my.cnf mysql-slave:/etc/mysql/my.cnf
-    ```
-
-    重啟容器套用設定。
-    ```
-    docker restart mysql-slave
-    ```
-
-    進入到 mysql 內。
-    ```
-    mysql -u root -p
-    ```
-    然後輸入密碼，如果是使用範例的話，密碼是 test。
-    
-    根據 `1. 設定主資料庫` 紀錄的內容設定
-    ```
-    mysql> CHANGE MASTER TO
-    MASTER_HOST='mysql-master',
-    MASTER_PORT=3307,
-    MASTER_USER='second',
-    MASTER_PASSWORD='test',
-    MASTER_LOG_FILE='mysql-bin.000001',
-    MASTER_LOG_POS=860,
-    GET_MASTER_PUBLIC_KEY = 1;
-    ```
-    * MASTER_HOST : 是設定主資料庫的ip，但這裡是使用docker-compose內的網路，所以根據 service 名稱設定。
-    * MASTER_PORT : 設定主資料的port，如果沒有設定，預設是走3306，所以如果沒有修改主資料庫的 port 是不用設定此項。
-    * MASTER_USER : 在 `1. 設定主資料庫` 的主資料庫中設定給從資料庫使用的使用者。
-    * MASTER_PASSWORD : 在 `1. 設定主資料庫` 的主資料庫中設定給從資料庫使用的使用者密碼。
-    * MASTER_LOG_FILE : 在 `1. 設定主資料庫` `SHOW MASTER STATUS` 顯示的 File，指定從哪個 binary log 檔案開始同步。
-    * MASTER_LOG_POS : 在 `1. 設定主資料庫` `SHOW MASTER STATUS` 顯示的 Position，指定 binlog 中的 offset 位置，從該位置開始複製資料。
-    * GET_MASTER_PUBLIC_KEY : 設定啟用 RSA 公鑰來交換密碼。
+  進入到從資料庫的容器內。
+  ```
+  docker exec -it mysql-slave /bin/bash
+  ```
   
-    更詳細的設定可以參考 : [CHANGE MASTER TO Statement](https://dev.mysql.com/doc/refman/8.0/en/change-master-to.html)
+  將備份的資料匯入到從資料庫內，也可以看一下 master.sql 的內容，會發現裡面其實是 SQL 指令的腳本，所以這個動作其實是在從資料庫上 replay 主資料庫的操作。 
+  ```
+  mysql -u root -p --default-character-set=utf8 < replication/master.sql
+  ```
+  會要求輸入密碼，密碼是 test。
 
-    啟動從伺服器的同步機制
-    ```
-    mysql> START SLAVE;
-    ```
-    要注意的是 SQL 版本 如果是 8.0.22 以上的話，`START SLAVE` 被改為 `START REPLICA`，所以需要注意 SQL 版本。
+  進入到 mysql 內。
+  ```
+  mysql -u root -p
+  ```
+  然後輸入密碼，如果是使用範例的話，密碼是 test。
 
-    [詳細請參考](https://dev.mysql.com/doc/refman/8.0/en/start-slave.html)
+  此時執行 
+  ```
+  mysql> SHOW DATABASES;
+  ```
+  會看到，成功備份了主資料庫的 user_db。
+  ```
+  +--------------------+
+  | Database           |
+  +--------------------+
+  | information_schema |
+  | mysql              |
+  | performance_schema |
+  | sys                |
+  | user_db            |
+  +--------------------+
+  ```
 
-    確認從伺服器的狀態
-    ```
-    mysql> SHOW SLAVE STATUS\G;
-    ```
+### 3. 設定從資料庫
 
-    看到以下內容顯示 YES 表示成功了。
-    ```
-    Slave_IO_Running: Yes
-    Slave_SQL_Running: Yes
-    ```
-  1. 設定主資料庫
-    記得要解除 `2. 備份主資料庫資料到從資料庫` 主資料庫 的 read only。
-    ```
-    mysql> UNLOCK TABLES;
-    ```
+  首先需要設定 my.cnf，新增以下內容，或著也可以直接使用範例中的 my.cnf 移除掉註解。
 
-    可以嘗試在主資料庫 insert 一筆資料，確認從資料庫是否也有更新
-    ```
-    mysql> USE user_db;
-    INSERT INTO users (user_name, mail) VALUES ('test', 'test@mail.com');
-    SELECT * FROM users;
-    ```
+  ```
+  # 設定 server 唯一id
+  server-id=2
+  # 設定只能讀取
+  read_only=ON
+  # 設定連 root 也只能讀取
+  super_read_only=ON
+  ```
+  `super_read_only` 這項設定端看使用者需求，如果只設定 `read_only` 只會阻擋普通使用者的寫入，並不會阻擋 root 的寫入。
+
+  將修改後的內容新增到容器內，因為範例建立的容器沒有 vi 或是 nano。
+  ```
+  docker cp ./my.cnf mysql-slave:/etc/mysql/my.cnf
+  ```
+
+  重啟容器套用設定。
+  ```
+  docker restart mysql-slave
+  ```
+
+  進入到 mysql 內。
+  ```
+  mysql -u root -p
+  ```
+  然後輸入密碼，如果是使用範例的話，密碼是 test。
+  
+  根據 `1. 設定主資料庫` 紀錄的內容設定
+  ```
+  mysql> CHANGE MASTER TO
+  MASTER_HOST='mysql-master',
+  MASTER_PORT=3307,
+  MASTER_USER='second',
+  MASTER_PASSWORD='test',
+  MASTER_LOG_FILE='mysql-bin.000001',
+  MASTER_LOG_POS=860,
+  GET_MASTER_PUBLIC_KEY = 1;
+  ```
+  * MASTER_HOST : 是設定主資料庫的ip，但這裡是使用docker-compose內的網路，所以根據 service 名稱設定。
+  * MASTER_PORT : 設定主資料的port，如果沒有設定，預設是走3306，所以如果沒有修改主資料庫的 port 是不用設定此項。
+  * MASTER_USER : 在 `1. 設定主資料庫` 的主資料庫中設定給從資料庫使用的使用者。
+  * MASTER_PASSWORD : 在 `1. 設定主資料庫` 的主資料庫中設定給從資料庫使用的使用者密碼。
+  * MASTER_LOG_FILE : 在 `1. 設定主資料庫` `SHOW MASTER STATUS` 顯示的 File，指定從哪個 binary log 檔案開始同步。
+  * MASTER_LOG_POS : 在 `1. 設定主資料庫` `SHOW MASTER STATUS` 顯示的 Position，指定 binlog 中的 offset 位置，從該位置開始複製資料。
+  * GET_MASTER_PUBLIC_KEY : 設定啟用 RSA 公鑰來交換密碼。
+
+  更詳細的設定可以參考 : [CHANGE MASTER TO Statement](https://dev.mysql.com/doc/refman/8.0/en/change-master-to.html)
+
+  啟動從伺服器的同步機制
+  ```
+  mysql> START SLAVE;
+  ```
+  要注意的是 SQL 版本 如果是 8.0.22 以上的話，`START SLAVE` 被改為 `START REPLICA`，所以需要注意 SQL 版本。
+
+  [詳細請參考](https://dev.mysql.com/doc/refman/8.0/en/start-slave.html)
+
+  確認從伺服器的狀態
+  ```
+  mysql> SHOW SLAVE STATUS\G;
+  ```
+
+  看到以下內容顯示 YES 表示成功了。
+  ```
+  Slave_IO_Running: Yes
+  Slave_SQL_Running: Yes
+  ```
+
+### 4. 設定主資料庫
+
+  記得要解除 `2. 備份主資料庫資料到從資料庫` 主資料庫 的 read only。
+
+  ```
+  mysql> UNLOCK TABLES;
+  ```
+
+  可以嘗試在主資料庫 insert 一筆資料，確認從資料庫是否也有更新。
+
+  ```
+  mysql> USE user_db;
+  INSERT INTO users (user_name, mail) VALUES ('test', 'test@mail.com');
+  ```
 
 ## 參考:
 * 內行人才知道的系統設計面試指南
