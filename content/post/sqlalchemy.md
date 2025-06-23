@@ -6,14 +6,6 @@ categories = [
   "System Design"
 ]
 +++
-## 前言
-學到了 connection pool，想說要來 optimize 自己的 side project。
-
-沒想到研究了半天，原本使用的 Sqlalchemy 就已經有內建有做了。
-
-因此做個筆記紀錄一下，也給自己一個警惕，比起請 AI 直接開始改寫，不如先去讀一下官方文件，養成閱讀官方文件的習慣。
-
-在使用 AI 上也要更小心自己不夠了解的部分，避免被幻覺誤導。
 
 ## Connection pool
 每當跟資料庫要求 CRUD 操作時，都需要跟資料庫建立連線、進行操作、關閉連線。
